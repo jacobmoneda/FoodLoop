@@ -71,7 +71,7 @@ export default function RestaurantDetails() {
     <div className="min-h-screen bg-gray-50 dark:bg-black">
       {/* Header */}
       <header className="flex items-center justify-between p-4 bg-white dark:bg-gray-900 shadow-md">
-        <Link href="/map" className="text-2xl font-bold text-gray-800 dark:text-white hover:text-blue-600">
+        <Link href="/" className="text-2xl font-bold text-gray-800 dark:text-white hover:text-blue-600">
           ←
         </Link>
         <div className="text-2xl font-bold text-gray-800 dark:text-white">FoodLoop</div>
