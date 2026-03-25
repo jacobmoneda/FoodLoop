@@ -2,38 +2,44 @@
 import { useState, useEffect } from 'react';
 import Image from "next/image";
 
+interface Restaurant {
+  id: string;
+  name: string;
+  image: string;
+  rating: number;
+}
+
 export default function Home() {
-  const [popularRestaurants, setPopularRestaurants] = useState([]);
-  const [nearbyRestaurants, setNearbyRestaurants] = useState([]);
+  const [popularRestaurants, setPopularRestaurants] = useState<Restaurant[]>([]);
+  const [nearbyRestaurants, setNearbyRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchRestaurants = async () => {
-      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY;
-      const location = '40.7128,-74.0060'; // Example: New York City (lat,lng). Use geolocation for user's location.
+      const location = '-36.8509,174.7645'; // Auckland coordinates
       const radius = 5000; // 5km radius
       const type = 'restaurant';
 
       try {
-        // Fetch nearby restaurants
+        // Fetch nearby restaurants via our API route
         const response = await fetch(
-          `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${location}&radius=${radius}&type=${type}&key=${apiKey}`
+          `/api/places?location=${location}&radius=${radius}&type=${type}`
         );
         const data = await response.json();
 
         if (data.results) {
           // Split into popular and nearby (e.g., based on rating or randomly)
-          const sorted = data.results.sort((a, b) => b.rating - a.rating);
-          setPopularRestaurants(sorted.slice(0, 4).map(r => ({
+          const sorted = data.results.sort((a: any, b: any) => b.rating - a.rating);
+          setPopularRestaurants(sorted.slice(0, 4).map((r: any) => ({
             id: r.place_id,
             name: r.name,
-            image: r.photos ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${r.photos[0].photo_reference}&key=${apiKey}` : '/next.svg',
+            image: r.photos ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${r.photos[0].photo_reference}&key=${process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY}` : '/next.svg',
             rating: r.rating || 0,
           })));
-          setNearbyRestaurants(sorted.slice(4, 8).map(r => ({
+          setNearbyRestaurants(sorted.slice(4, 8).map((r: any) => ({
             id: r.place_id,
             name: r.name,
-            image: r.photos ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${r.photos[0].photo_reference}&key=${apiKey}` : '/next.svg',
+            image: r.photos ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${r.photos[0].photo_reference}&key=${process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY}` : '/next.svg',
             rating: r.rating || 0,
           })));
         }

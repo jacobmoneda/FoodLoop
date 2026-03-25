@@ -1,21 +1,61 @@
+"use client";
+import { useState, useEffect } from 'react';
 import Image from "next/image";
 
+interface Restaurant {
+  id: string;
+  name: string;
+  image: string;
+  rating: number;
+}
+
 export default function Home() {
-  // Dummy data for restaurants
-  const popularRestaurants = [
-    { id: 1, name: "Pizza Palace", image: "/next.svg", rating: 4.5 },
-    { id: 2, name: "Burger Barn", image: "/next.svg", rating: 4.2 },
-    { id: 3, name: "Sushi Spot", image: "/next.svg", rating: 4.8 },
-    { id: 4, name: "Taco Town", image: "/next.svg", rating: 4.3 },
-  ];
+  const [popularRestaurants, setPopularRestaurants] = useState<Restaurant[]>([]);
+  const [nearbyRestaurants, setNearbyRestaurants] = useState<Restaurant[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const nearbyRestaurants = [
-    { id: 5, name: "Local Diner", image: "/next.svg", rating: 4.0 },
-    { id: 6, name: "Cafe Corner", image: "/next.svg", rating: 4.1 },
-    { id: 7, name: "Grill House", image: "/next.svg", rating: 4.6 },
-    { id: 8, name: "Noodle Nook", image: "/next.svg", rating: 4.4 },
-  ];
+  useEffect(() => {
+    const fetchRestaurants = async () => {
+      const location = '-36.8509,174.7645'; // Auckland coordinates
+      const radius = 5000; // 5km radius
+      const type = 'restaurant';
 
+      try {
+        // Fetch nearby restaurants via our API route
+        const response = await fetch(
+          `/api/places?location=${location}&radius=${radius}&type=${type}`
+        );
+        const data = await response.json();
+
+        if (data.results) {
+          // Split into popular and nearby (e.g., based on rating or randomly)
+          const sorted = data.results.sort((a: any, b: any) => b.rating - a.rating);
+          setPopularRestaurants(sorted.slice(0, 4).map((r: any) => ({
+            id: r.place_id,
+            name: r.name,
+            image: r.photos ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${r.photos[0].photo_reference}&key=${process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY}` : '/next.svg',
+            rating: r.rating || 0,
+          })));
+          setNearbyRestaurants(sorted.slice(4, 8).map((r: any) => ({
+            id: r.place_id,
+            name: r.name,
+            image: r.photos ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${r.photos[0].photo_reference}&key=${process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY}` : '/next.svg',
+            rating: r.rating || 0,
+          })));
+        }
+      } catch (error) {
+        console.error('Error fetching restaurants:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRestaurants();
+  }, []);
+
+  if (loading) return <div>Loading...</div>;
+
+  // Rest of your component remains the same, but now uses real data
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black">
       {/* Header */}
@@ -24,7 +64,6 @@ export default function Home() {
           FoodLoop
         </div>
         <div className="text-gray-600 dark:text-gray-400">
-          {/* User Icon Placeholder */}
           <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
           </svg>
