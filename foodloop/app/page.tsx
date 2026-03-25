@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import Image from "next/image";
+import Link from "next/link";
 
 interface Restaurant {
   id: string;
@@ -86,19 +87,21 @@ export default function Home() {
         <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-white">Popular Restaurants</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {popularRestaurants.map((restaurant) => (
-            <div key={restaurant.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-              <Image
-                src={restaurant.image}
-                alt={restaurant.name}
-                width={300}
-                height={200}
-                className="w-full h-48 object-cover"
-              />
-              <div className="p-4">
-                <h3 className="text-lg font-medium text-gray-800 dark:text-white">{restaurant.name}</h3>
-                <p className="text-gray-600 dark:text-gray-400">Rating: {restaurant.rating}</p>
+            <Link key={restaurant.id} href={`/restaurant/${restaurant.id}`} className="block">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
+                <Image
+                  src={restaurant.image}
+                  alt={restaurant.name}
+                  width={300}
+                  height={200}
+                  className="w-full h-48 object-cover"
+                />
+                <div className="p-4">
+                  <h3 className="text-lg font-medium text-gray-800 dark:text-white">{restaurant.name}</h3>
+                  <p className="text-gray-600 dark:text-gray-400">Rating: {restaurant.rating}</p>
+                </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </section>
@@ -108,19 +111,21 @@ export default function Home() {
         <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-white">Nearby Restaurants</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {nearbyRestaurants.map((restaurant) => (
-            <div key={restaurant.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-              <Image
-                src={restaurant.image}
-                alt={restaurant.name}
-                width={300}
-                height={200}
-                className="w-full h-48 object-cover"
-              />
-              <div className="p-4">
-                <h3 className="text-lg font-medium text-gray-800 dark:text-white">{restaurant.name}</h3>
-                <p className="text-gray-600 dark:text-gray-400">Rating: {restaurant.rating}</p>
+            <Link key={restaurant.id} href={`/restaurant/${restaurant.id}`} className="block">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
+                <Image
+                  src={restaurant.image}
+                  alt={restaurant.name}
+                  width={300}
+                  height={200}
+                  className="w-full h-48 object-cover"
+                />
+                <div className="p-4">
+                  <h3 className="text-lg font-medium text-gray-800 dark:text-white">{restaurant.name}</h3>
+                  <p className="text-gray-600 dark:text-gray-400">Rating: {restaurant.rating}</p>
+                </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </section>
