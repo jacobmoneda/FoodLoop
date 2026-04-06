@@ -30,7 +30,7 @@ interface RestaurantDetails {
 
 export default function RestaurantDetails() {
   const params = useParams();
-  const placeId = params.placeId as string;
+  const placeId = (params?.placeId as string) || '';
   const [restaurant, setRestaurant] = useState<RestaurantDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

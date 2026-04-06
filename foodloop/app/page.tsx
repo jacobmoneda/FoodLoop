@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from 'next/navigation';
 import { SignInButton, UserButton, useUser } from '@clerk/nextjs';
 import { supabase } from '../lib/supabase';
 
@@ -22,6 +23,7 @@ interface SearchFilters {
 }
 
 export default function Home() {
+  const router = useRouter();
   const { user } = useUser();
   const [popularRestaurants, setPopularRestaurants] = useState<Restaurant[]>([]);
   const [nearbyRestaurants, setNearbyRestaurants] = useState<Restaurant[]>([]);
@@ -111,8 +113,12 @@ export default function Home() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSearching(true);
-    fetchRestaurants(searchFilters);
+    const params = new URLSearchParams();
+    params.set('query', searchFilters.query);
+    params.set('cuisine', searchFilters.cuisine);
+    params.set('minRating', String(searchFilters.minRating));
+    params.set('maxDistance', String(searchFilters.maxDistance));
+    router.push(`/search?${params.toString()}`);
   };
 
   const handleFilterChange = (key: keyof SearchFilters, value: string | number) => {
@@ -152,7 +158,13 @@ export default function Home() {
         </div>
         <div className="absolute right-4">
           {user ? (
-            <UserButton />
+            <Link href={`/user`} className="block">
+              <img
+                src={user.imageUrl || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="gray"><circle cx="12" cy="8" r="4"/><path d="M12 14c-7 0-8 3.5-8 5v3h16v-3c0-1.5-1-5-8-5z"/></svg>'}
+                alt="Profile"
+                className="w-10 h-10 rounded-full border-2 border-gray-300 hover:border-blue-600 transition-colors cursor-pointer"
+              />
+            </Link>
           ) : (
             <SignInButton mode="modal">
               <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
