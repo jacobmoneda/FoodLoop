@@ -21,7 +21,7 @@ async function searchRestaurants(query: string, location: string) {
   }
 
   const response = await fetch(
-    `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${query}&location=${location}&key=${API_KEY}`
+    `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${query}&location=${location}&type=restaurant&key=${API_KEY}`
   );
   return response.json();
 }

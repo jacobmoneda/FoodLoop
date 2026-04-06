@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import Image from "next/image";
 import Link from "next/link";
+import { SignInButton, UserButton, useUser } from '@clerk/nextjs';
+import { supabase } from '../lib/supabase';
 
 interface Restaurant {
   id: string;
@@ -20,6 +22,7 @@ interface SearchFilters {
 }
 
 export default function Home() {
+  const { user } = useUser();
   const [popularRestaurants, setPopularRestaurants] = useState<Restaurant[]>([]);
   const [nearbyRestaurants, setNearbyRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,15 +33,32 @@ export default function Home() {
     maxDistance: 5000,
   });
   const [isSearching, setIsSearching] = useState(false);
+  const [savedRestaurants, setSavedRestaurants] = useState<string[]>([]);
 
   useEffect(() => {
     fetchRestaurants();
-  }, []);
+    if (user) {
+      loadSavedRestaurants();
+    } else {
+      setSavedRestaurants([]);
+    }
+  }, [user]);
+
+  const loadSavedRestaurants = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('saved_restaurants')
+      .select('place_id')
+      .eq('user_id', user.id);
+    if (data) {
+      setSavedRestaurants(data.map(s => s.place_id));
+    }
+  };
 
   const fetchRestaurants = async (filters: SearchFilters = searchFilters) => {
     setLoading(true);
     try {
-      let url = `/api/places?location=-36.8509,174.7645&radius=${filters.maxDistance}`;
+      let url = `/api/places?location=-36.8509,174.7645&radius=${filters.maxDistance}&type=restaurant`;
 
       if (filters.query.trim()) {
         // Use search mode for text queries
@@ -46,7 +66,7 @@ export default function Home() {
       } else {
         // Use nearby search with optional cuisine filter
         if (filters.cuisine) {
-          url += `&type=${filters.cuisine}`;
+          url += `&keyword=${encodeURIComponent(filters.cuisine)}`;
         }
       }
 
@@ -99,6 +119,27 @@ export default function Home() {
     setSearchFilters(prev => ({ ...prev, [key]: value }));
   };
 
+  const toggleSave = async (placeId: string) => {
+    if (!user) return; // Should not happen since button is only shown when signed in
+
+    const { data: existing } = await supabase
+      .from('saved_restaurants')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('place_id', placeId)
+      .single();
+
+    if (existing) {
+      // Remove save
+      await supabase.from('saved_restaurants').delete().eq('id', existing.id);
+      setSavedRestaurants(prev => prev.filter(id => id !== placeId));
+    } else {
+      // Add save
+      await supabase.from('saved_restaurants').insert({ user_id: user.id, place_id: placeId });
+      setSavedRestaurants(prev => [...prev, placeId]);
+    }
+  };
+
   if (loading) return <div>Loading...</div>;
 
   // Rest of your component remains the same, but now uses real data
@@ -109,10 +150,16 @@ export default function Home() {
         <div className="text-2xl font-bold text-gray-800 dark:text-white">
           FoodLoop
         </div>
-        <div className="absolute right-4 text-gray-600 dark:text-gray-400">
-          <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-          </svg>
+        <div className="absolute right-4">
+          {user ? (
+            <UserButton />
+          ) : (
+            <SignInButton mode="modal">
+              <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                Sign In
+              </button>
+            </SignInButton>
+          )}
         </div>
       </header>
 
@@ -202,8 +249,24 @@ export default function Home() {
         <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-white">Popular Restaurants</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {popularRestaurants.map((restaurant) => (
-            <Link key={restaurant.id} href={`/restaurant/${restaurant.id}`} className="block">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
+            <div key={restaurant.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer relative">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleSave(restaurant.id);
+                }}
+                className="absolute top-2 right-2 p-2 bg-white dark:bg-gray-700 rounded-full shadow-md hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors z-10"
+              >
+                <svg
+                  className={`w-5 h-5 ${savedRestaurants.includes(restaurant.id) ? 'text-red-500 fill-current' : 'text-gray-400'}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+              </button>
+              <Link href={`/restaurant/${restaurant.id}`}>
                 <Image
                   src={restaurant.image}
                   alt={restaurant.name}
@@ -230,8 +293,8 @@ export default function Home() {
                     </div>
                   )}
                 </div>
-              </div>
-            </Link>
+              </Link>
+            </div>
           ))}
         </div>
       </section>
@@ -241,8 +304,24 @@ export default function Home() {
         <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-white">Nearby Restaurants</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {nearbyRestaurants.map((restaurant) => (
-            <Link key={restaurant.id} href={`/restaurant/${restaurant.id}`} className="block">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
+            <div key={restaurant.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer relative">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleSave(restaurant.id);
+                }}
+                className="absolute top-2 right-2 p-2 bg-white dark:bg-gray-700 rounded-full shadow-md hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors z-10"
+              >
+                <svg
+                  className={`w-5 h-5 ${savedRestaurants.includes(restaurant.id) ? 'text-red-500 fill-current' : 'text-gray-400'}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+              </button>
+              <Link href={`/restaurant/${restaurant.id}`}>
                 <Image
                   src={restaurant.image}
                   alt={restaurant.name}
@@ -269,8 +348,8 @@ export default function Home() {
                     </div>
                   )}
                 </div>
-              </div>
-            </Link>
+              </Link>
+            </div>
           ))}
         </div>
       </section>

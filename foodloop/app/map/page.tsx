@@ -30,15 +30,21 @@ export default function Home() {
     maxDistance: 5000,
   });
   const [isSearching, setIsSearching] = useState(false);
+  const [savedRestaurants, setSavedRestaurants] = useState<string[]>([]);
 
   useEffect(() => {
     fetchRestaurants();
+    // Load saved restaurants from localStorage
+    const saved = localStorage.getItem('savedRestaurants');
+    if (saved) {
+      setSavedRestaurants(JSON.parse(saved));
+    }
   }, []);
 
   const fetchRestaurants = async (filters: SearchFilters = searchFilters) => {
     setLoading(true);
     try {
-      let url = `/api/places?location=-36.8509,174.7645&radius=${filters.maxDistance}`;
+      let url = `/api/places?location=-36.8509,174.7645&radius=${filters.maxDistance}&type=restaurant`;
 
       if (filters.query.trim()) {
         // Use search mode for text queries
@@ -46,7 +52,7 @@ export default function Home() {
       } else {
         // Use nearby search with optional cuisine filter
         if (filters.cuisine) {
-          url += `&type=${filters.cuisine}`;
+          url += `&keyword=${encodeURIComponent(filters.cuisine)}`;
         }
       }
 
@@ -97,6 +103,14 @@ export default function Home() {
 
   const handleFilterChange = (key: keyof SearchFilters, value: string | number) => {
     setSearchFilters(prev => ({ ...prev, [key]: value }));
+  };
+
+  const toggleSave = (placeId: string) => {
+    setSavedRestaurants(prev => {
+      const newSaved = prev.includes(placeId) ? prev.filter(id => id !== placeId) : [...prev, placeId];
+      localStorage.setItem('savedRestaurants', JSON.stringify(newSaved));
+      return newSaved;
+    });
   };
 
   if (loading) return <div>Loading...</div>;
