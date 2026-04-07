@@ -126,30 +126,56 @@ export default function Home() {
   };
 
   const toggleSave = async (placeId: string) => {
-    if (!user) return; // Should not happen since button is only shown when signed in
+  if (!user) return;
 
-    const { data: existing } = await supabase
+  try {
+    // Ensure user exists in Supabase
+    await fetch('/api/user', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    // Then proceed with save/unsave logic
+    const { data: existingSave } = await supabase
       .from('saved_restaurants')
       .select('id')
       .eq('user_id', user.id)
       .eq('place_id', placeId)
       .single();
 
-    if (existing) {
-      // Remove save
-      await supabase.from('saved_restaurants').delete().eq('id', existing.id);
+    if (existingSave) {
+      // Unsave
+      await supabase
+        .from('saved_restaurants')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('place_id', placeId);
+      
       setSavedRestaurants(prev => prev.filter(id => id !== placeId));
     } else {
-      // Add save
-      await supabase.from('saved_restaurants').insert({ user_id: user.id, place_id: placeId });
+      // Save
+      await supabase
+        .from('saved_restaurants')
+        .insert({
+          user_id: user.id,
+          place_id: placeId,
+          // Add other fields as needed
+        });
+      
       setSavedRestaurants(prev => [...prev, placeId]);
     }
-  };
+  } catch (error) {
+    console.error('Error toggling save:', error);
+  }
+};
 
   if (loading) return <div>Loading...</div>;
 
   // Rest of your component remains the same, but now uses real data
   return (
+    console.log(supabase),
     <div className="min-h-screen bg-gray-50 dark:bg-black">
       {/* Header */}
       <header className="relative flex items-center justify-center p-4 bg-white dark:bg-gray-900 shadow-md">

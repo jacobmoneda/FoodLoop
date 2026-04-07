@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useUser, SignInButton } from '@clerk/nextjs';
+import { useUser, SignInButton, UserButton } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
+import { User } from '@clerk/nextjs/server';
 
 interface Restaurant {
   id: string;
@@ -81,11 +82,15 @@ export default function UserPage() {
         <div className="text-2xl font-bold text-gray-800 dark:text-white">Saved Restaurants</div>
         <div className="text-gray-600 dark:text-gray-400">
           {user && (
+            /*
             <img
               src={user.imageUrl || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="gray"><circle cx="12" cy="8" r="4"/><path d="M12 14c-7 0-8 3.5-8 5v3h16v-3c0-1.5-1-5-8-5z"/></svg>'}
               alt="Profile"
               className="w-10 h-10 rounded-full border-2 border-gray-300"
             />
+            */
+            <UserButton>
+            </UserButton>
           )}
         </div>
       </header>
