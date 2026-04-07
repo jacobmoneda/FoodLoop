@@ -2,11 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useUser, SignInButton, UserButton } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
-import { supabase } from '../../lib/supabase';
-import { User } from '@clerk/nextjs/server';
+import { RestaurantCard } from '../components/RestaurantCard';
 
 interface Restaurant {
   id: string;
@@ -58,6 +56,23 @@ export default function UserPage() {
     setLoading(false);
   };
 
+  const toggleSave = async (placeId: string, restaurant?: any) => {
+    if (!user) return;
+
+    try {
+      // Always unsave on profile page
+      const response = await fetch(`/api/restaurants?placeId=${placeId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setSavedRestaurants(prev => prev.filter(r => r.id !== placeId));
+      }
+    } catch (error) {
+      console.error('Error removing restaurant:', error);
+    }
+  };
+
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
 
   return (
@@ -101,36 +116,12 @@ export default function UserPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {savedRestaurants.map((restaurant) => (
-              <Link key={restaurant.id} href={`/restaurant/${restaurant.id}`} className="block">
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
-                  <Image
-                    src={restaurant.image}
-                    alt={restaurant.name}
-                    width={300}
-                    height={200}
-                    className="w-full h-48 object-cover"
-                  />
-                  <div className="p-4">
-                    <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-1">{restaurant.name}</h3>
-                    <div className="flex items-center mb-2">
-                      <span className="text-yellow-500 mr-1">★</span>
-                      <span className="text-gray-600 dark:text-gray-400 text-sm">{restaurant.rating}</span>
-                    </div>
-                    {restaurant.vicinity && (
-                      <p className="text-gray-500 dark:text-gray-400 text-sm mb-2">{restaurant.vicinity}</p>
-                    )}
-                    {restaurant.types && restaurant.types.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {restaurant.types.slice(0, 2).map((type) => (
-                          <span key={type} className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs">
-                            {type.replace(/_/g, ' ')}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </Link>
+              <RestaurantCard
+                key={restaurant.id}
+                restaurant={restaurant}
+                isSaved={true}
+                onToggleSave={toggleSave}
+              />
             ))}
           </div>
         )}

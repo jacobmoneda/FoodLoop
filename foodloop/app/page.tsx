@@ -1,10 +1,9 @@
 "use client";
 import { useState, useEffect } from 'react';
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
 import { SignInButton, UserButton, useUser } from '@clerk/nextjs';
-import { supabase } from '../lib/supabase';
+import { RestaurantCard } from './components/RestaurantCard';
 
 interface Restaurant {
   id: string;
@@ -172,7 +171,6 @@ export default function Home() {
 
   // Rest of your component remains the same, but now uses real data
   return (
-    console.log(supabase),
     <div className="min-h-screen bg-gray-50 dark:bg-black">
       {/* Header */}
       <header className="relative flex items-center justify-center p-4 bg-white dark:bg-gray-900 shadow-md">
@@ -205,7 +203,7 @@ export default function Home() {
           <div className="flex gap-2">
             <input
               type="text"
-              placeholder="Search restaurants..."
+              placeholder="Search restaurants, dishes, places..."
               value={searchFilters.query}
               onChange={(e) => handleFilterChange('query', e.target.value)}
               className="flex-1 px-4 py-2 border border-gray-300 rounded-l-full focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
@@ -284,52 +282,12 @@ export default function Home() {
         <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-white">Popular Restaurants</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {popularRestaurants.map((restaurant) => (
-            <div key={restaurant.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer relative">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleSave(restaurant.id, restaurant);
-                }}
-                className="absolute top-2 right-2 p-2 bg-white dark:bg-gray-700 rounded-full shadow-md hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors z-10"
-              >
-                <svg
-                  className={`w-5 h-5 ${savedRestaurants.includes(restaurant.id) ? 'text-red-500 fill-current' : 'text-gray-400'}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
-              </button>
-              <Link href={`/restaurant/${restaurant.id}`}>
-                <Image
-                  src={restaurant.image}
-                  alt={restaurant.name}
-                  width={300}
-                  height={200}
-                  className="w-full h-48 object-cover"
-                />
-                <div className="p-4">
-                  <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-1">{restaurant.name}</h3>
-                  <div className="flex items-center mb-2">
-                    <span className="text-yellow-500 mr-1">★</span>
-                    <span className="text-gray-600 dark:text-gray-400 text-sm">{restaurant.rating}</span>
-                  </div>
-                  {restaurant.vicinity && (
-                    <p className="text-gray-500 dark:text-gray-400 text-sm mb-2">{restaurant.vicinity}</p>
-                  )}
-                  {restaurant.types && restaurant.types.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {restaurant.types.slice(0, 2).map((type) => (
-                        <span key={type} className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs">
-                          {type.replace(/_/g, ' ')}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </Link>
-            </div>
+            <RestaurantCard
+              key={restaurant.id}
+              restaurant={restaurant}
+              isSaved={savedRestaurants.includes(restaurant.id)}
+              onToggleSave={toggleSave}
+            />
           ))}
         </div>
       </section>
@@ -339,52 +297,12 @@ export default function Home() {
         <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-white">Nearby Restaurants</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {nearbyRestaurants.map((restaurant) => (
-            <div key={restaurant.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer relative">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleSave(restaurant.id, restaurant);
-                }}
-                className="absolute top-2 right-2 p-2 bg-white dark:bg-gray-700 rounded-full shadow-md hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors z-10"
-              >
-                <svg
-                  className={`w-5 h-5 ${savedRestaurants.includes(restaurant.id) ? 'text-red-500 fill-current' : 'text-gray-400'}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
-              </button>
-              <Link href={`/restaurant/${restaurant.id}`}>
-                <Image
-                  src={restaurant.image}
-                  alt={restaurant.name}
-                  width={300}
-                  height={200}
-                  className="w-full h-48 object-cover"
-                />
-                <div className="p-4">
-                  <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-1">{restaurant.name}</h3>
-                  <div className="flex items-center mb-2">
-                    <span className="text-yellow-500 mr-1">★</span>
-                    <span className="text-gray-600 dark:text-gray-400 text-sm">{restaurant.rating}</span>
-                  </div>
-                  {restaurant.vicinity && (
-                    <p className="text-gray-500 dark:text-gray-400 text-sm mb-2">{restaurant.vicinity}</p>
-                  )}
-                  {restaurant.types && restaurant.types.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {restaurant.types.slice(0, 2).map((type) => (
-                        <span key={type} className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs">
-                          {type.replace(/_/g, ' ')}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </Link>
-            </div>
+            <RestaurantCard
+              key={restaurant.id}
+              restaurant={restaurant}
+              isSaved={savedRestaurants.includes(restaurant.id)}
+              onToggleSave={toggleSave}
+            />
           ))}
         </div>
       </section>
