@@ -34,14 +34,32 @@ export default function SearchPage() {
     minRating: Number(searchParams.get('minRating')) || 0,
     maxDistance: Number(searchParams.get('maxDistance')) || 5000,
   });
+  const [localFilters, setLocalFilters] = useState<SearchFilters>({
+    query: '',
+    cuisine: '',
+    minRating: 0,
+    maxDistance: 5000,
+  });
   const [savedRestaurants, setSavedRestaurants] = useState<string[]>([]);
 
   useEffect(() => {
     if (user) {
       loadSavedRestaurants();
     }
+  }, [user]);
+
+  useEffect(() => {
+    // Update search filters from URL params
+    const newFilters: SearchFilters = {
+      query: searchParams.get('query') || '',
+      cuisine: searchParams.get('cuisine') || '',
+      minRating: Number(searchParams.get('minRating')) || 0,
+      maxDistance: Number(searchParams.get('maxDistance')) || 5000,
+    };
+    setSearchFilters(newFilters);
+    setLocalFilters(newFilters);
     fetchRestaurants();
-  }, [user, searchParams, searchFilters]);
+  }, [searchParams]);
 
   const loadSavedRestaurants = async () => {
     if (!user) return;
@@ -99,15 +117,15 @@ export default function SearchPage() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const params = new URLSearchParams();
-    params.set('query', searchFilters.query);
-    params.set('cuisine', searchFilters.cuisine);
-    params.set('minRating', String(searchFilters.minRating));
-    params.set('maxDistance', String(searchFilters.maxDistance));
+    params.set('query', localFilters.query);
+    params.set('cuisine', localFilters.cuisine);
+    params.set('minRating', String(localFilters.minRating));
+    params.set('maxDistance', String(localFilters.maxDistance));
     router.push(`/search?${params.toString()}`);
   };
 
   const handleFilterChange = (key: keyof SearchFilters, value: string | number) => {
-    setSearchFilters(prev => ({ ...prev, [key]: value }));
+    setLocalFilters(prev => ({ ...prev, [key]: value }));
   };
 
   const toggleSave = async (placeId: string, restaurant?: any) => {
@@ -189,8 +207,8 @@ export default function SearchPage() {
           <div className="flex gap-2">
             <input
               type="text"
-              placeholder="Search restaurants..."
-              value={searchFilters.query}
+              placeholder="Search restaurants, foods, places..."
+              value={localFilters.query}
               onChange={(e) => handleFilterChange('query', e.target.value)}
               className="flex-1 px-4 py-2 border border-gray-300 rounded-l-full focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
             />
@@ -207,7 +225,7 @@ export default function SearchPage() {
             <div className="flex items-center gap-2">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Cuisine:</label>
               <select
-                value={searchFilters.cuisine}
+                value={localFilters.cuisine}
                 onChange={(e) => handleFilterChange('cuisine', e.target.value)}
                 className="px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
               >
@@ -232,7 +250,7 @@ export default function SearchPage() {
             <div className="flex items-center gap-2">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Min Rating:</label>
               <select
-                value={searchFilters.minRating}
+                value={localFilters.minRating}
                 onChange={(e) => handleFilterChange('minRating', Number(e.target.value))}
                 className="px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
               >
@@ -247,7 +265,7 @@ export default function SearchPage() {
             <div className="flex items-center gap-2">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Max Distance:</label>
               <select
-                value={searchFilters.maxDistance}
+                value={localFilters.maxDistance}
                 onChange={(e) => handleFilterChange('maxDistance', Number(e.target.value))}
                 className="px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
               >
