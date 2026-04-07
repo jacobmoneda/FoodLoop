@@ -36,36 +36,24 @@ export default function UserPage() {
 
   const loadSavedRestaurants = async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from('saved_restaurants')
-      .select('place_id')
-      .eq('user_id', user.id);
+    try {
+      const response = await fetch('/api/restaurants');
+      const result = await response.json();
 
-    if (data) {
-      const ids = data.map(s => s.place_id);
-      const restaurants: Restaurant[] = [];
+      if (result.data) {
+        const restaurants: Restaurant[] = result.data.map((item: any) => ({
+          id: item.place_id,
+          name: item.name,
+          image: item.image || '/next.svg',
+          rating: item.rating || 0,
+          types: item.types,
+          vicinity: item.vicinity,
+        }));
 
-      for (const id of ids) {
-        try {
-          const response = await fetch(`/api/places?mode=details&place_id=${id}`);
-          const data = await response.json();
-          if (data.result) {
-            const restaurant = data.result;
-            restaurants.push({
-              id: restaurant.place_id,
-              name: restaurant.name,
-              image: restaurant.photos ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${restaurant.photos[0].photo_reference}&key=${process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY}` : '/next.svg',
-              rating: restaurant.rating || 0,
-              types: restaurant.types,
-              vicinity: restaurant.formatted_address,
-            });
-          }
-        } catch (error) {
-          console.error('Error fetching restaurant details:', error);
-        }
+        setSavedRestaurants(restaurants);
       }
-
-      setSavedRestaurants(restaurants);
+    } catch (error) {
+      console.error('Error loading saved restaurants:', error);
     }
     setLoading(false);
   };

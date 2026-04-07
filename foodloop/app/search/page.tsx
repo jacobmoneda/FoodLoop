@@ -45,12 +45,14 @@ export default function SearchPage() {
 
   const loadSavedRestaurants = async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from('saved_restaurants')
-      .select('place_id')
-      .eq('user_id', user.id);
-    if (data) {
-      setSavedRestaurants(data.map(s => s.place_id));
+    try {
+      const response = await fetch('/api/restaurants');
+      const result = await response.json();
+      if (result.data) {
+        setSavedRestaurants(result.data.map((s: any) => s.place_id));
+      }
+    } catch (error) {
+      console.error('Error loading saved restaurants:', error);
     }
   };
 
@@ -108,22 +110,44 @@ export default function SearchPage() {
     setSearchFilters(prev => ({ ...prev, [key]: value }));
   };
 
-  const toggleSave = async (placeId: string) => {
+  const toggleSave = async (placeId: string, restaurant?: any) => {
     if (!user) return;
 
-    const { data: existing } = await supabase
-      .from('saved_restaurants')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('place_id', placeId)
-      .single();
+    try {
+      const isSaved = savedRestaurants.includes(placeId);
 
-    if (existing) {
-      await supabase.from('saved_restaurants').delete().eq('id', existing.id);
-      setSavedRestaurants(prev => prev.filter(id => id !== placeId));
-    } else {
-      await supabase.from('saved_restaurants').insert({ user_id: user.id, place_id: placeId });
-      setSavedRestaurants(prev => [...prev, placeId]);
+      if (isSaved) {
+        // Unsave
+        const response = await fetch(`/api/restaurants?placeId=${placeId}`, {
+          method: 'DELETE',
+        });
+
+        if (response.ok) {
+          setSavedRestaurants(prev => prev.filter(id => id !== placeId));
+        }
+      } else {
+        // Save
+        const response = await fetch('/api/restaurants', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            placeId,
+            name: restaurant?.name,
+            image: restaurant?.image,
+            rating: restaurant?.rating,
+            types: restaurant?.types,
+            vicinity: restaurant?.vicinity,
+          }),
+        });
+
+        if (response.ok) {
+          setSavedRestaurants(prev => [...prev, placeId]);
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling save:', error);
     }
   };
 
@@ -259,7 +283,7 @@ export default function SearchPage() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      toggleSave(restaurant.id);
+                      toggleSave(restaurant.id, restaurant);
                     }}
                     className="absolute top-2 right-2 p-2 bg-white dark:bg-gray-700 rounded-full shadow-md hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors z-10"
                   >
