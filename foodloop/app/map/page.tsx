@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from "next/link";
 import { Wrapper, Status } from "@googlemaps/react-wrapper";
 import { RestaurantCard } from '../components/RestaurantCard';
+import Header from '../components/Header';
 
 interface Restaurant {
   id: string;
@@ -77,15 +78,7 @@ function MapComponent() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black">
-      {/* Header */}
-      <header className="relative flex items-center justify-center p-4 bg-white dark:bg-gray-900 shadow-md">
-        <Link href="/" className="absolute left-4 text-2xl font-bold text-gray-800 dark:text-white hover:text-blue-600">
-          ←
-        </Link>
-        <div className="text-2xl font-bold text-gray-800 dark:text-white">
-          Restaurant Map
-        </div>
-      </header>
+      <Header />
 
       <div className="flex h-[calc(100vh-80px)]">
         {/* Map */}

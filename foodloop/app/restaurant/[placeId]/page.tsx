@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Image from "next/image";
 import Link from "next/link";
+import Header from '../../components/Header';
 
 interface RestaurantDetails {
   name: string;
@@ -69,18 +70,7 @@ export default function RestaurantDetails() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black">
-      {/* Header */}
-      <header className="flex items-center justify-between p-4 bg-white dark:bg-gray-900 shadow-md">
-        <Link href="/" className="text-2xl font-bold text-gray-800 dark:text-white hover:text-blue-600">
-          ←
-        </Link>
-        <div className="text-2xl font-bold text-gray-800 dark:text-white">FoodLoop</div>
-        <div className="text-gray-600 dark:text-gray-400">
-          <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-          </svg>
-        </div>
-      </header>
+      <Header />
 
       <div className="max-w-4xl mx-auto p-4">
         {/* Main Photo */}

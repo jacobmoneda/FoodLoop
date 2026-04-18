@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { SignInButton, useUser } from '@clerk/nextjs';
 import { RestaurantCard } from '../components/RestaurantCard';
+import Header from '../components/Header';
 
 interface Restaurant {
   id: string;
@@ -172,32 +173,7 @@ export default function SearchPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black">
-      {/* Header */}
-      <header className="relative flex items-center justify-center p-4 bg-white dark:bg-gray-900 shadow-md">
-        <Link href="/" className="absolute left-4 text-2xl font-bold text-gray-800 dark:text-white hover:text-blue-600">
-          ←
-        </Link>
-        <div className="text-2xl font-bold text-gray-800 dark:text-white">
-          FoodLoop
-        </div>
-        <div className="absolute right-4">
-          {user ? (
-            <Link href={`/user`} className="block">
-              <img
-                src={user.imageUrl || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="gray"><circle cx="12" cy="8" r="4"/><path d="M12 14c-7 0-8 3.5-8 5v3h16v-3c0-1.5-1-5-8-5z"/></svg>'}
-                alt="Profile"
-                className="w-10 h-10 rounded-full border-2 border-gray-300 hover:border-blue-600 transition-colors cursor-pointer"
-              />
-            </Link>
-          ) : (
-            <SignInButton mode="modal">
-              <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-                Sign In
-              </button>
-            </SignInButton>
-          )}
-        </div>
-      </header>
+      <Header />
 
       {/* Search and Filters */}
       <div className="p-4 bg-white dark:bg-gray-900">
