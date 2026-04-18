@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useUser, SignInButton, UserButton } from '@clerk/nextjs';
-import { useRouter } from 'next/navigation';
-import { RestaurantCard } from '../components/RestaurantCard';
-import Header from '../components/Header';
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { useUser, SignInButton, UserButton } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
+import { RestaurantCard } from "../components/RestaurantCard";
+import Header from "../components/Header";
 
 interface Restaurant {
   id: string;
@@ -24,9 +24,9 @@ export default function UserPage() {
 
   useEffect(() => {
     if (!isLoaded) return;
-    
+
     if (!user) {
-      router.push('/sign-in');
+      router.push("/sign-in");
       return;
     }
 
@@ -36,14 +36,14 @@ export default function UserPage() {
   const loadSavedRestaurants = async () => {
     if (!user) return;
     try {
-      const response = await fetch('/api/restaurants');
+      const response = await fetch("/api/restaurants");
       const result = await response.json();
 
       if (result.data) {
         const restaurants: Restaurant[] = result.data.map((item: any) => ({
           id: item.place_id,
           name: item.name,
-          image: item.image || '/next.svg',
+          image: item.image || "/next.svg",
           rating: item.rating || 0,
           types: item.types,
           vicinity: item.vicinity,
@@ -52,7 +52,7 @@ export default function UserPage() {
         setSavedRestaurants(restaurants);
       }
     } catch (error) {
-      console.error('Error loading saved restaurants:', error);
+      console.error("Error loading saved restaurants:", error);
     }
     setLoading(false);
   };
@@ -63,27 +63,36 @@ export default function UserPage() {
     try {
       // Always unsave on profile page
       const response = await fetch(`/api/restaurants?placeId=${placeId}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       if (response.ok) {
-        setSavedRestaurants(prev => prev.filter(r => r.id !== placeId));
+        setSavedRestaurants((prev) => prev.filter((r) => r.id !== placeId));
       }
     } catch (error) {
-      console.error('Error removing restaurant:', error);
+      console.error("Error removing restaurant:", error);
     }
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (loading)
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Loading...
+      </div>
+    );
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black">
       <Header />
-
+      <h1 className="text-2xl font-bold text-gray-800 dark:text-white p-4">
+        My Saved Restaurants
+      </h1>
       <div className="p-4">
         {!user ? (
           <div className="text-center text-gray-500 dark:text-gray-400">
-            <p className="text-lg">Please sign in to view your saved restaurants.</p>
+            <p className="text-lg">
+              Please sign in to view your saved restaurants.
+            </p>
             <SignInButton mode="modal">
               <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 mt-4">
                 Sign In
@@ -93,7 +102,9 @@ export default function UserPage() {
         ) : savedRestaurants.length === 0 ? (
           <div className="text-center text-gray-500 dark:text-gray-400">
             <p className="text-lg">No saved restaurants yet.</p>
-            <Link href="/" className="text-blue-600 hover:underline">Discover restaurants</Link>
+            <Link href="/" className="text-blue-600 hover:underline">
+              Discover restaurants
+            </Link>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
