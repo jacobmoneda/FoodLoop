@@ -1,9 +1,10 @@
 "use client";
-import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import Header from '../../components/Header';
+import { useUser } from "@clerk/nextjs";
+import Header from "../../components/Header";
 
 interface RestaurantDetails {
   name: string;
@@ -31,24 +32,29 @@ interface RestaurantDetails {
 
 export default function RestaurantDetails() {
   const params = useParams();
-  const placeId = (params?.placeId as string) || '';
+  const placeId = (params?.placeId as string) || "";
+  const { user } = useUser();
   const [restaurant, setRestaurant] = useState<RestaurantDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSaved, setIsSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const fetchRestaurantDetails = async () => {
       try {
-        const response = await fetch(`/api/places?mode=details&place_id=${placeId}`);
+        const response = await fetch(
+          `/api/places?mode=details&place_id=${placeId}`,
+        );
         const data = await response.json();
 
         if (data.result) {
           setRestaurant(data.result);
         } else {
-          setError('Restaurant not found');
+          setError("Restaurant not found");
         }
       } catch (err) {
-        setError('Failed to load restaurant details');
+        setError("Failed to load restaurant details");
       } finally {
         setLoading(false);
       }
@@ -59,14 +65,97 @@ export default function RestaurantDetails() {
     }
   }, [placeId]);
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-  if (error) return <div className="min-h-screen flex items-center justify-center text-red-500">{error}</div>;
-  if (!restaurant) return <div className="min-h-screen flex items-center justify-center">Restaurant not found</div>;
+  useEffect(() => {
+    const fetchSavedStatus = async () => {
+      if (!user || !placeId) {
+        setIsSaved(false);
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/restaurants");
+        if (!response.ok) {
+          setIsSaved(false);
+          return;
+        }
+
+        const data = await response.json();
+        const saved = Array.isArray(data.data)
+          ? data.data.some((item: any) => item.place_id === placeId)
+          : false;
+
+        setIsSaved(saved);
+      } catch (err) {
+        console.error("Error checking saved status:", err);
+        setIsSaved(false);
+      }
+    };
+
+    fetchSavedStatus();
+  }, [user, placeId]);
+
+  if (loading)
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Loading...
+      </div>
+    );
+  if (error)
+    return (
+      <div className="min-h-screen flex items-center justify-center text-red-500">
+        {error}
+      </div>
+    );
+  if (!restaurant)
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Restaurant not found
+      </div>
+    );
 
   const mainPhoto = restaurant.photos?.[0];
   const photoUrl = mainPhoto
     ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=${mainPhoto.photo_reference}&key=${process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY}`
-    : '/next.svg';
+    : "/next.svg";
+
+  const toggleSave = async () => {
+    if (!user || saving) return;
+
+    setSaving(true);
+    try {
+      if (isSaved) {
+        const response = await fetch(
+          `/api/restaurants?placeId=${encodeURIComponent(placeId)}`,
+          {
+            method: "DELETE",
+          },
+        );
+        if (response.ok) {
+          setIsSaved(false);
+        }
+      } else {
+        const response = await fetch("/api/restaurants", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            placeId,
+            name: restaurant.name,
+            image: photoUrl,
+            rating: restaurant.rating,
+            types: restaurant.types,
+            vicinity: restaurant.formatted_address,
+          }),
+        });
+        if (response.ok) {
+          setIsSaved(true);
+        }
+      }
+    } catch (err) {
+      console.error("Error toggling save status:", err);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black">
@@ -85,33 +174,68 @@ export default function RestaurantDetails() {
         </div>
 
         {/* Restaurant Info */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-          <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">{restaurant.name}</h1>
-
+        <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">
+            {restaurant.name}
+          </h1>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleSave();
+            }}
+            aria-label={isSaved ? "Unsave restaurant" : "Save restaurant"}
+            className="absolute top-2 right-2 p-2 bg-white dark:bg-gray-700 rounded-full shadow-md hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors z-10"
+          >
+            <svg
+              className={`w-5 h-5 ${isSaved ? "text-red-500 fill-current" : "text-gray-400"}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+              />
+            </svg>
+          </button>
           <div className="flex items-center mb-4">
             <div className="flex items-center mr-4">
               <span className="text-yellow-500 mr-1">★</span>
-              <span className="text-gray-800 dark:text-white font-semibold">{restaurant.rating}</span>
+              <span className="text-gray-800 dark:text-white font-semibold">
+                {restaurant.rating}
+              </span>
             </div>
             {restaurant.opening_hours && (
-              <span className={`px-2 py-1 rounded text-sm ${restaurant.opening_hours.open_now ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                {restaurant.opening_hours.open_now ? 'Open' : 'Closed'}
+              <span
+                className={`px-2 py-1 rounded text-sm ${restaurant.opening_hours.open_now ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
+              >
+                {restaurant.opening_hours.open_now ? "Open" : "Closed"}
               </span>
             )}
           </div>
 
-          <p className="text-gray-600 dark:text-gray-400 mb-4">{restaurant.formatted_address}</p>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
+            {restaurant.formatted_address}
+          </p>
 
           {restaurant.formatted_phone_number && (
             <p className="text-gray-600 dark:text-gray-400 mb-2">
-              <span className="font-semibold">Phone:</span> {restaurant.formatted_phone_number}
+              <span className="font-semibold">Phone:</span>{" "}
+              {restaurant.formatted_phone_number}
             </p>
           )}
 
           {restaurant.website && (
             <p className="text-gray-600 dark:text-gray-400 mb-4">
-              <span className="font-semibold">Website:</span>{' '}
-              <a href={restaurant.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+              <span className="font-semibold">Website:</span>{" "}
+              <a
+                href={restaurant.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:underline"
+              >
                 {restaurant.website}
               </a>
             </p>
@@ -119,8 +243,11 @@ export default function RestaurantDetails() {
 
           <div className="flex flex-wrap gap-2">
             {restaurant.types.map((type) => (
-              <span key={type} className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-sm">
-                {type.replace(/_/g, ' ')}
+              <span
+                key={type}
+                className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-sm"
+              >
+                {type.replace(/_/g, " ")}
               </span>
             ))}
           </div>
@@ -129,10 +256,14 @@ export default function RestaurantDetails() {
         {/* Opening Hours */}
         {restaurant.opening_hours?.weekday_text && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Opening Hours</h2>
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
+              Opening Hours
+            </h2>
             <div className="space-y-1">
               {restaurant.opening_hours.weekday_text.map((day, index) => (
-                <p key={index} className="text-gray-600 dark:text-gray-400">{day}</p>
+                <p key={index} className="text-gray-600 dark:text-gray-400">
+                  {day}
+                </p>
               ))}
             </div>
           </div>
@@ -141,18 +272,29 @@ export default function RestaurantDetails() {
         {/* Reviews */}
         {restaurant.reviews && restaurant.reviews.length > 0 && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Reviews</h2>
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
+              Reviews
+            </h2>
             <div className="space-y-4">
               {restaurant.reviews.slice(0, 5).map((review, index) => (
-                <div key={index} className="border-b border-gray-200 dark:border-gray-700 pb-4 last:border-b-0">
+                <div
+                  key={index}
+                  className="border-b border-gray-200 dark:border-gray-700 pb-4 last:border-b-0"
+                >
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-semibold text-gray-800 dark:text-white">{review.author_name}</span>
+                    <span className="font-semibold text-gray-800 dark:text-white">
+                      {review.author_name}
+                    </span>
                     <div className="flex items-center">
                       <span className="text-yellow-500 mr-1">★</span>
-                      <span className="text-gray-600 dark:text-gray-400">{review.rating}</span>
+                      <span className="text-gray-600 dark:text-gray-400">
+                        {review.rating}
+                      </span>
                     </div>
                   </div>
-                  <p className="text-gray-600 dark:text-gray-400">{review.text}</p>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    {review.text}
+                  </p>
                 </div>
               ))}
             </div>
